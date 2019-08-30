@@ -17,13 +17,14 @@ describe("Get Comments", async () => {
     expect.assertions(10)
     const movieIds = ["573a13b5f29313caabd42c2f"]
     const promises = movieIds.map(async id => {
-      const movie = await MoviesDAO.getMovieByID(id)
+      const movie = await MoviesDAO.getMovieByID(id);
       const comments = movie.comments
       const sortedComments = comments.slice()
       sortedComments.sort((a, b) => b.date.getTime() - a.date.getTime())
 
       for (let i = 0; i < Math.min(10, comments.length); i++) {
         const randomInt = Math.floor(Math.random() * comments.length - 1)
+        console.log(randomInt)
         expect(comments[randomInt]).toEqual(sortedComments[randomInt])
       }
     })

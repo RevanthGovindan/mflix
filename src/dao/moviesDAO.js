@@ -116,7 +116,7 @@ export default class MoviesDAO {
 
     // TODO Ticket: Text and Subfield Search
     // Construct a query that will search for the chosen genre.
-    const query = {genres: { $in: searchGenre }}
+    const query = { genres: { $in: searchGenre } }
     const project = {}
     const sort = DEFAULT_SORT
 
@@ -144,6 +144,7 @@ export default class MoviesDAO {
     const countingPipeline = [matchStage, sortStage, { $count: "count" }]
     const skipStage = { $skip: moviesPerPage * page }
     const limitStage = { $limit: moviesPerPage }
+    console.log(matchStage)
     const facetStage = {
       $facet: {
         runtime: [
@@ -194,6 +195,16 @@ export default class MoviesDAO {
     const queryPipeline = [
       matchStage,
       sortStage,
+      skipStage,
+      limitStage,
+
+      facetStage
+
+
+
+
+
+
       // TODO Ticket: Faceted Search
       // Add the stages to queryPipeline in the correct order.
     ]
@@ -201,6 +212,7 @@ export default class MoviesDAO {
     try {
       const results = await (await movies.aggregate(queryPipeline)).next()
       const count = await (await movies.aggregate(countingPipeline)).next()
+      console.log(results.movies.length)
       return {
         ...results,
         ...count,
@@ -259,7 +271,7 @@ export default class MoviesDAO {
 
     // TODO Ticket: Paging
     // Use the cursor to only return the movies that belong on the current page
-    const skip =  page * 20;
+    const skip = page * 20;
     const displayCursor = cursor.limit(moviesPerPage).skip(skip);
     try {
       const moviesList = await displayCursor.toArray()
@@ -292,11 +304,33 @@ export default class MoviesDAO {
       */
 
       // TODO Ticket: Get Comments
-      // Implement the required pipeline.
       const pipeline = [
         {
           $match: {
             _id: ObjectId(id)
+          }
+        }
+        ,
+        {
+          $lookup:
+          {
+            from: 'comments',
+            let: { "id": "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$movie_id", "$$id"]
+                  }
+                }
+              },
+              {
+                $sort: {
+                  "date": -1
+                }
+              }
+            ],
+            as: "comments"
           }
         }
       ]
@@ -317,15 +351,15 @@ export default class MoviesDAO {
   }
 
   static async getMoviesByCountry(countries) {
-    try{
+    try {
       return await movies.find({
-        countries:{
-          $in:countries
+        countries: {
+          $in: countries
         }
       }).project({
-        title:1
+        title: 1
       }).toArray()
-    } catch(e){
+    } catch (e) {
       console.error(`Something went wrong in getMovieByID: ${e}`)
       throw e
     }

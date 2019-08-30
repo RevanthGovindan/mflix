@@ -45,8 +45,14 @@ export default class CommentsDAO {
     try {
       // TODO Ticket: Create/Update Comments
       // Construct the comment document to be inserted into MongoDB.
-      const commentDoc = { someField: "someValue" }
-
+      const commentDoc = {
+        movie_id: ObjectId(movieId),
+        email: user.email,
+        name: user.name,
+        text: comment,
+        date: date
+      }
+      //console.log(commentDoc)
       return await comments.insertOne(commentDoc)
     } catch (e) {
       console.error(`Unable to post comment: ${e}`)
@@ -70,8 +76,11 @@ export default class CommentsDAO {
       // Use the commentId and userEmail to select the proper comment, then
       // update the "text" and "date" fields of the selected comment.
       const updateResponse = await comments.updateOne(
-        { someField: "someValue" },
-        { $set: { someOtherField: "someOtherValue" } },
+        {
+          email: userEmail,
+          _id: ObjectId(commentId)
+        },
+        { $set: { text: text, date: date } },
       )
 
       return updateResponse
@@ -95,6 +104,7 @@ export default class CommentsDAO {
       // TODO Ticket: Delete Comments
       // Use the userEmail and commentId to delete the proper comment.
       const deleteResponse = await comments.deleteOne({
+        email: userEmail,
         _id: ObjectId(commentId),
       })
 
@@ -116,16 +126,29 @@ export default class CommentsDAO {
     try {
       // TODO Ticket: User Report
       // Return the 20 users who have commented the most on MFlix.
-      const pipeline = []
+      const pipeline = [
+        {
+          $group: {
+            _id: "$email",
+            count: {
+              $sum: 1
+            }
+          }
+        },
+        {
+          $sort: {
+            count: -1
+          }
+        },
+        {
+          $limit: 20
+        }
+      ]
 
       // TODO Ticket: User Report
       // Use a more durable Read Concern here to make sure this data is not stale.
-      const readConcern = comments.readConcern
 
-      const aggregateResult = await comments.aggregate(pipeline, {
-        readConcern,
-      })
-
+      const aggregateResult = await comments.aggregate(pipeline, { readConcern: "local" });
       return await aggregateResult.toArray()
     } catch (e) {
       console.error(`Unable to retrieve most active commenters: ${e}`)
