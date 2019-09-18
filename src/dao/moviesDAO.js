@@ -198,12 +198,7 @@ export default class MoviesDAO {
       skipStage,
       limitStage,
 
-      facetStage
-
-
-
-
-
+      facetStage,
 
       // TODO Ticket: Faceted Search
       // Add the stages to queryPipeline in the correct order.
@@ -271,8 +266,8 @@ export default class MoviesDAO {
 
     // TODO Ticket: Paging
     // Use the cursor to only return the movies that belong on the current page
-    const skip = page * 20;
-    const displayCursor = cursor.limit(moviesPerPage).skip(skip);
+    const skip = page * 20
+    const displayCursor = cursor.limit(moviesPerPage).skip(skip)
     try {
       const moviesList = await displayCursor.toArray()
       const totalNumMovies = page === 0 ? await movies.countDocuments(query) : 0
@@ -307,35 +302,34 @@ export default class MoviesDAO {
       const pipeline = [
         {
           $match: {
-            _id: ObjectId(id)
-          }
-        }
-        ,
+            _id: ObjectId(id),
+          },
+        },
         {
-          $lookup:
-          {
-            from: 'comments',
-            let: { "id": "$_id" },
+          $lookup: {
+            from: "comments",
+            let: { id: "$_id" },
             pipeline: [
               {
                 $match: {
                   $expr: {
-                    $eq: ["$movie_id", "$$id"]
-                  }
-                }
+                    $eq: ["$movie_id", "$$id"],
+                  },
+                },
               },
               {
                 $sort: {
-                  "date": -1
-                }
-              }
+                  date: -1,
+                },
+              },
             ],
-            as: "comments"
-          }
-        }
+            as: "comments",
+          },
+        },
       ]
       return await movies.aggregate(pipeline).next()
     } catch (e) {
+      console.log(e.message)
       /**
       Ticket: Error Handling
 
@@ -346,19 +340,28 @@ export default class MoviesDAO {
       // TODO Ticket: Error Handling
       // Catch the InvalidId error by string matching, and then handle it.
       console.error(`Something went wrong in getMovieByID: ${e}`)
+      if (
+        e.message ===
+        "Argument passed in must be a single String of 12 bytes or a string of 24 hex characters"
+      ) {
+        return null
+      }
       throw e
     }
   }
 
   static async getMoviesByCountry(countries) {
     try {
-      return await movies.find({
-        countries: {
-          $in: countries
-        }
-      }).project({
-        title: 1
-      }).toArray()
+      return await movies
+        .find({
+          countries: {
+            $in: countries,
+          },
+        })
+        .project({
+          title: 1,
+        })
+        .toArray()
     } catch (e) {
       console.error(`Something went wrong in getMovieByID: ${e}`)
       throw e

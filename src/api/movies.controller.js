@@ -20,7 +20,7 @@ export default class MoviesController {
       : Array(req.query.countries)
     //console.log(countries)
     let moviesList = await MoviesDAO.getMoviesByCountry(countries)
-    console.log("moviesList",moviesList);
+    console.log("moviesList", moviesList)
     let response = {
       titles: moviesList,
     }
@@ -132,6 +132,7 @@ export default class MoviesController {
 
   static async getConfig(req, res, next) {
     const { poolSize, wtimeout, authInfo } = await MoviesDAO.getConfiguration()
+    console.log(authInfo)
     try {
       let response = {
         pool_size: poolSize,
